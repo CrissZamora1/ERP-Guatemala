@@ -48,6 +48,11 @@ class ProductoResource extends Resource
                     ->createOptionForm([
                         Forms\Components\TextInput::make('nombre')->required(),
                     ]),
+                Forms\Components\Select::make('proveedor_id')
+                    ->label('Proveedor')
+                    ->relationship('proveedor', 'nombre')
+                    ->searchable()
+                    ->preload(),
 
                 Forms\Components\TextInput::make('costo')
                     ->numeric()
@@ -97,6 +102,7 @@ class ProductoResource extends Resource
                     ->label('Categoría')
                     ->relationship('categoria', 'nombre'),
             ])
+
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])

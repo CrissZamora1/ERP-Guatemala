@@ -10,9 +10,21 @@ class Producto extends Model
     use HasFactory;
 
     protected $fillable = [
-        'sku', 'codigo_barras', 'nombre', 'descripcion',
-        'categoria_id', 'costo', 'precio', 'activo',
+        'sku',
+        'codigo_barras',
+        'nombre',
+        'descripcion',
+        'categoria_id',
+        'proveedor_id',
+        'costo',
+        'precio',
+        'activo',
     ];
+
+    public function proveedor()
+    {
+        return $this->belongsTo(Proveedor::class);
+    }
 
     public function categoria()
     {

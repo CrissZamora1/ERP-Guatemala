@@ -18,6 +18,21 @@ class SucursalResource extends Resource
     protected static ?string $modelLabel = 'Sucursal';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->role !== 'cajero';
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->role !== 'cajero';
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->role !== 'cajero';
+    }
+
     public static function form(Form $form): Form
     {
         return $form

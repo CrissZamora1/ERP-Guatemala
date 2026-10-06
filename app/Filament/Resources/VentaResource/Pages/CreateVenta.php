@@ -47,6 +47,11 @@ class CreateVenta extends CreateRecord
                 ]);
 
                 $inventario->decrement('stock_actual', $detalle['cantidad']);
+                $inventario->refresh();
+
+                if ($inventario->stock_actual <= $inventario->stock_minimo) {
+                    $inventario->generarOrdenAutomatica();
+                }
 
                 MovimientoInventario::create([
                     'producto_id' => $detalle['producto_id'],

@@ -21,6 +21,17 @@ class VentaResource extends Resource
     protected static ?string $modelLabel = 'Venta';
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
 
+    protected static function actualizarTotal(Forms\Get $get, Forms\Set $set): void
+    {
+        $detalles = $get('../../detalles') ?? [];
+
+        $total = collect($detalles)->sum(function ($item) {
+            return ($item['cantidad'] ?? 0) * ($item['precio_unitario'] ?? 0);
+        });
+
+        $set('../../total', round($total, 2));
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -58,30 +69,35 @@ class VentaResource extends Resource
                             ->searchable()
                             ->required()
                             ->live()
-                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                            ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
                                 $producto = Producto::find($state);
-                                $set('precio_unitario', $producto?->precio ?? 0);
+                                $precio = $producto?->precio ?? 0;
+                                $set('precio_unitario', $precio);
+                                $set('subtotal', round(($get('cantidad') ?? 1) * $precio, 2));
+                                static::actualizarTotal($get, $set);
                             }),
 
                         Forms\Components\TextInput::make('cantidad')
                             ->numeric()
                             ->default(1)
                             ->required()
-                            ->live()
-                            ->afterStateUpdated(
-                                fn($state, Forms\Get $get, Forms\Set $set) =>
-                                $set('subtotal', round(($state ?? 0) * ($get('precio_unitario') ?? 0), 2))
-                            ),
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
+                                $subtotal = round(($state ?? 0) * ($get('precio_unitario') ?? 0), 2);
+                                $set('subtotal', $subtotal);
+                                static::actualizarTotal($get, $set);
+                            }),
 
                         Forms\Components\TextInput::make('precio_unitario')
                             ->numeric()
                             ->prefix('Q')
                             ->required()
-                            ->live()
-                            ->afterStateUpdated(
-                                fn($state, Forms\Get $get, Forms\Set $set) =>
-                                $set('subtotal', round(($get('cantidad') ?? 0) * ($state ?? 0), 2))
-                            ),
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
+                                $subtotal = round(($get('cantidad') ?? 0) * ($state ?? 0), 2);
+                                $set('subtotal', $subtotal);
+                                static::actualizarTotal($get, $set);
+                            }),
 
                         Forms\Components\TextInput::make('subtotal')
                             ->numeric()
@@ -179,6 +195,16 @@ class VentaResource extends Resource
                     }),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->role !== 'cajero';
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->role !== 'cajero';
     }
 
     public static function getPages(): array

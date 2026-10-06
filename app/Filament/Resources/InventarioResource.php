@@ -18,6 +18,11 @@ class InventarioResource extends Resource
     protected static ?string $modelLabel = 'Inventario';
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
 
+    public static function canCreate(): bool
+    {
+        return true;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -34,7 +39,10 @@ class InventarioResource extends Resource
                     ->relationship('sucursal', 'nombre')
                     ->searchable()
                     ->preload()
-                    ->required(),
+                    ->required()
+                    ->disabled(fn () => auth()->user()?->role === 'cajero')
+                    ->default(fn () => auth()->user()?->role === 'cajero' ? auth()->user()?->sucursal_id : null)
+                    ->dehydrated(),
 
                 Forms\Components\TextInput::make('stock_actual')
                     ->numeric()
@@ -76,13 +84,25 @@ class InventarioResource extends Resource
                 Tables\Columns\TextColumn::make('stock_maximo')
                     ->label('Máximo'),
             ])
+            ->recordUrl(function ($record) {
+                $puedeEditar = in_array(auth()->user()?->role, ['admin', 'encargado'])
+                    || $record->sucursal_id === auth()->user()?->sucursal_id;
+
+                return $puedeEditar
+                    ? \App\Filament\Resources\InventarioResource::getUrl('edit', ['record' => $record])
+                    : null;
+            })
             ->filters([
                 Tables\Filters\SelectFilter::make('sucursal_id')
                     ->label('Sucursal')
                     ->relationship('sucursal', 'nombre'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn ($record) =>
+                        in_array(auth()->user()?->role, ['admin', 'encargado'])
+                        || $record->sucursal_id === auth()->user()?->sucursal_id
+                    ),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

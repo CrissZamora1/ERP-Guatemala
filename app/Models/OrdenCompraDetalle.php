@@ -12,7 +12,12 @@ class OrdenCompraDetalle extends Model
     protected $table = 'orden_compra_detalle';
 
     protected $fillable = [
-        'orden_compra_id', 'producto_id', 'cantidad', 'costo_unitario', 'subtotal',
+        'orden_compra_id',
+        'producto_id',
+        'cantidad',
+        'cantidad_recibida',
+        'costo_unitario',
+        'subtotal',
     ];
 
     public function ordenCompra()
